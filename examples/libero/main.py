@@ -3,7 +3,6 @@ import dataclasses
 import logging
 import math
 import pathlib
-from typing import Any
 
 import imageio
 from libero.libero import benchmark
@@ -46,7 +45,7 @@ class Args:
     seed: int = 7  # Random Seed (for reproducibility)
 
 
-def eval_libero(args: Args, client: Any | None = None) -> None:
+def eval_libero(args: Args) -> None:
     # Set random seed
     np.random.seed(args.seed)
 
@@ -71,8 +70,7 @@ def eval_libero(args: Args, client: Any | None = None) -> None:
     else:
         raise ValueError(f"Unknown task suite: {args.task_suite_name}")
 
-    if client is None:
-        client = _websocket_client_policy.WebsocketClientPolicy(args.host, args.port)
+    client = _websocket_client_policy.WebsocketClientPolicy(args.host, args.port)
 
     # Start evaluation
     total_episodes, total_successes = 0, 0
@@ -100,7 +98,6 @@ def eval_libero(args: Args, client: Any | None = None) -> None:
 
             # Setup
             t = 0
-            done = False
             replay_images = []
 
             logging.info(f"Starting episode {task_episodes+1}...")
