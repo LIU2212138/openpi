@@ -13,6 +13,7 @@ from openpi_client import image_tools
 from openpi_client import websocket_client_policy as _websocket_client_policy
 import tqdm
 import tyro
+import json
 
 LIBERO_DUMMY_ACTION = [0.0] * 6 + [-1.0]
 LIBERO_ENV_RESOLUTION = 256  # resolution used to render training data
@@ -44,10 +45,31 @@ class Args:
 
     seed: int = 7  # Random Seed (for reproducibility)
 
+    log_dir: str = ""
+
 
 def eval_libero(args: Args) -> None:
     # Set random seed
     np.random.seed(args.seed)
+
+    #config json version test result and the log dir
+    eval_results_json = {
+        "task_suite": args.task_suite_name,
+        "tasks": {},
+        "total_episodes": 0,
+        "total_successes": 0,
+        "total_success_rate": 0.0
+    }
+
+    if args.log_dir:
+        log_path = pathlib.Path(args.log_dir)
+        log_path.mkdir(parents=True, exist_ok=True)
+        # 为 root logger 添加 FileHandler
+        file_handler = logging.FileHandler(log_path / "eval.log")
+        file_handler.setFormatter(logging.Formatter('%(levelname)s:%(message)s'))
+        logging.getLogger().addHandler(file_handler)
+        logging.info(f"Logging configured. Saving logs to {log_path}")
+
 
     # Initialize LIBERO task suite
     benchmark_dict = benchmark.get_benchmark_dict()
@@ -182,8 +204,27 @@ def eval_libero(args: Args) -> None:
         logging.info(f"Current task success rate: {float(task_successes) / float(task_episodes)}")
         logging.info(f"Current total success rate: {float(total_successes) / float(total_episodes)}")
 
+        #log json version results
+        eval_results_json["tasks"][task_description] = {
+            "episodes": task_episodes,
+            "successes": task_successes,
+            "success_rate": float(task_successes) / float(task_episodes) if task_episodes > 0 else 0.0
+        }
+
     logging.info(f"Total success rate: {float(total_successes) / float(total_episodes)}")
     logging.info(f"Total episodes: {total_episodes}")
+
+    #log json version fianl result
+    if args.log_dir:
+        eval_results_json["total_episodes"] = total_episodes
+        eval_results_json["total_successes"] = total_successes
+        eval_results_json["total_success_rate"] = float(total_successes) / float(
+            total_episodes) if total_episodes > 0 else 0.0
+
+        json_file_path = pathlib.Path(args.log_dir) / "eval_results.json"
+        with open(json_file_path, "w", encoding="utf-8") as f:
+            json.dump(eval_results_json, f, indent=4, ensure_ascii=False)
+        logging.info(f"JSON results saved to {json_file_path}")
 
 
 def _get_libero_env(task, resolution, seed):
