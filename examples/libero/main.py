@@ -64,7 +64,7 @@
 #     if args.log_dir:
 #         log_path = pathlib.Path(args.log_dir)
 #         log_path.mkdir(parents=True, exist_ok=True)
-#         # 为 root logger 添加 FileHandler
+#         # Add FileHandler to the root logger
 #         file_handler = logging.FileHandler(log_path / "eval.log")
 #         file_handler.setFormatter(logging.Formatter('%(levelname)s:%(message)s'))
 #         logging.getLogger().addHandler(file_handler)
@@ -311,7 +311,7 @@ class Args:
 
 
 def _sanitize_filename(text: str) -> str:
-    """将任务描述转为安全的文件名片段：只保留字母、数字、下划线和短横线。"""
+    """Convert task description to a safe filename segment: keep only letters, digits, underscores, and hyphens."""
     return re.sub(r"[^a-zA-Z0-9_\-]", "_", text)
 
 
@@ -331,7 +331,7 @@ def eval_libero(args: Args) -> None:
     if args.log_dir:
         log_path = pathlib.Path(args.log_dir)
         log_path.mkdir(parents=True, exist_ok=True)
-        # 为 root logger 添加 FileHandler
+        # Add FileHandler to the root logger
         file_handler = logging.FileHandler(log_path / "eval.log")
         file_handler.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
         logging.getLogger().addHandler(file_handler)
@@ -372,7 +372,7 @@ def eval_libero(args: Args) -> None:
         # Initialize LIBERO environment and task description
         env, task_description = _get_libero_env(task, LIBERO_ENV_RESOLUTION, args.seed)
 
-        # ── 用于保存最后一次成功/失败视频帧 ──
+        # ── Keep frames of the last success/failure episode for video saving ──
         last_success_images = None
         last_failure_images = None
 
@@ -390,7 +390,7 @@ def eval_libero(args: Args) -> None:
 
             # Setup
             t = 0
-            done = False  # 安全初始化，防止异常时 done 未定义
+            done = False  # Safe initialization to prevent 'done' being undefined on exception
             replay_images = []
 
             logging.info(f"Starting episode {task_episodes + 1}...")
@@ -457,7 +457,7 @@ def eval_libero(args: Args) -> None:
             task_episodes += 1
             total_episodes += 1
 
-            # ── 仅在内存中保留最后一次成功 / 最后一次失败的帧 ──
+            # ── Only keep frames of the last success / last failure in memory ──
             if replay_images:
                 if done:
                     last_success_images = [np.asarray(x) for x in replay_images]
@@ -469,7 +469,7 @@ def eval_libero(args: Args) -> None:
             logging.info(f"# episodes completed so far: {total_episodes}")
             logging.info(f"# successes: {total_successes} ({total_successes / total_episodes * 100:.1f}%)")
 
-        # ── 每个 task 的全部 episode 跑完后，再写入视频文件 ──
+        # ── Write video files after all episodes for this task are completed ──
         task_segment = _sanitize_filename(task_description)
 
         if last_success_images is not None:
